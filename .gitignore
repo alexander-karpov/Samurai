@@ -1,0 +1,6 @@
+/*
+
+!/.gitignore
+!/Assets/
+
+/Assets/**/.DS_Store
