@@ -34,7 +34,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -1307,12 +1307,12 @@ TextureImporter:
       Scavengers_SpriteSheet_35: 1345137703
       Scavengers_SpriteSheet_9: -1217104624
       Scavengers_SpriteSheet_40: 426031915
-      Scavengers_SpriteSheet_19: -1668803174
       Scavengers_SpriteSheet_15: 237715750
       Scavengers_SpriteSheet_6: -964183625
       Scavengers_SpriteSheet_52: -1029511471
       Scavengers_SpriteSheet_28: -500495981
       Scavengers_SpriteSheet_33: -1337264575
+      Scavengers_SpriteSheet_19: -1668803174
       Scavengers_SpriteSheet_34: -1644444562
       Scavengers_SpriteSheet_17: 519712169
       Scavengers_SpriteSheet_37: 586221048

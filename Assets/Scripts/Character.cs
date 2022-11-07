@@ -2,10 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-abstract public class Character : MonoBehaviour
+public class Character : MonoBehaviour
 {
-    public float speed = 1f;
-    public float attackDelay = 1f;
+    public float speed = 5f;
+    public float attackDelay = 0.5f;
     public float swordLength = 1f;
 
     Animator animator;
@@ -16,7 +16,7 @@ abstract public class Character : MonoBehaviour
     Vector2 spawnPosition;
 
     // Start is called before the first frame update
-    protected virtual void Start()
+    void Start()
     {
         animator = GetComponent<Animator>();
         spawnPosition = transform.position;
@@ -25,23 +25,33 @@ abstract public class Character : MonoBehaviour
         Debug.Assert(attackableMask != 0);
     }
 
-    void Update()
+    public void Control(float direction, float attack)
     {
-        if (alive)
+        if (!alive)
         {
-            Control();
+            return;
+        }
+
+        if (direction != 0)
+        {
+            Move(direction);
+        }
+
+        if (attack != 0)
+        {
+            AttemptAttack();
         }
     }
 
-    protected abstract void Control();
-
-    public void Move(float direction)
+    public void FixPosition(float x, float y)
     {
-        var p = transform.position;
-        var movement = speed * direction * Time.deltaTime;
+        transform.position = Vector3.Lerp(
+            transform.position,
+            new Vector3(x, y, 0),
+            5f * Time.deltaTime
+        );
 
-        transform.Translate(movement, 0, 0);
-        transform.localScale = movement > 0 ? Vector3.one : new Vector3(-1, 1, 1);
+        transform.position = new Vector3(x, y, 0);
     }
 
     public void Hit()
@@ -56,7 +66,16 @@ abstract public class Character : MonoBehaviour
         StartCoroutine(Respawn());
     }
 
-    protected void AttemptAttack()
+    void Move(float direction)
+    {
+        var p = transform.position;
+        var movement = speed * direction * Time.deltaTime;
+
+        transform.Translate(movement, 0, 0);
+        transform.localScale = movement > 0 ? Vector3.one : new Vector3(-1, 1, 1);
+    }
+
+    void AttemptAttack()
     {
         if (Time.realtimeSinceStartup < lastAttackTime + attackDelay)
         {
