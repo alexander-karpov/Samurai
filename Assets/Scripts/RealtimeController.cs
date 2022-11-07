@@ -5,19 +5,21 @@ using System.Runtime.InteropServices;
 
 public class RealtimeController : MonoBehaviour
 {
-    float[] data = new float[10];
+    float[] data = new float[14];
 
-    Character player;
-    Character enemy;
+    MoveController player;
+    MoveController enemy;
     float lastReceivedVersion;
 
     [DllImport("__Internal")]
     private static extern void TransmitRealtimeData(float[] array, int size);
 
+    bool isOnline = false;
+
     void Start()
     {
-        player = GameObject.FindWithTag("Player").GetComponent<Character>();
-        enemy = GameObject.FindWithTag("Enemy").GetComponent<Character>();
+        player = GameObject.FindWithTag("Player").GetComponent<MoveController>();
+        enemy = GameObject.FindWithTag("Enemy").GetComponent<MoveController>();
 
         // Длинна массива для обмена данными должна быть чётной
         Debug.Assert(data.Length % 2 == 0);
@@ -25,11 +27,10 @@ public class RealtimeController : MonoBehaviour
         try
         {
             TransmitRealtimeData(data, data.Length);
+            isOnline = true;
         }
         catch
         {
-            enabled = false;
-
             Debug.LogWarning("RealtimeController disabled");
         }
     }
@@ -37,12 +38,24 @@ public class RealtimeController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        var direction = Input.GetAxisRaw("Horizontal");
-        var attack = Input.GetAxisRaw("Jump");
         var playerPosition = player.transform.position;
 
-        if (direction != data[3] ||
-            attack != data[4] ||
+        var direction = Input.GetAxisRaw("Horizontal");
+        var jumpDown = Input.GetButtonDown("Jump") ? 1 : 0;
+        var jumpUp = Input.GetButtonUp("Jump") ? 1 : 0; ;
+        var fire = Input.GetButtonDown("Fire1") ? 1 : 0;
+
+        if (!isOnline)
+        {
+            player.Move(direction, fire > 0, jumpDown > 0, jumpUp > 0);
+            enemy.Move(0, true, false, false);
+            return;
+        }
+
+        if (jumpDown != data[5] ||
+            jumpUp != data[6] ||
+            direction != data[3] ||
+            fire != data[4] ||
             playerPosition.x != data[1] ||
             playerPosition.y != data[2])
         {
@@ -50,7 +63,10 @@ public class RealtimeController : MonoBehaviour
             data[1] = playerPosition.x;
             data[2] = playerPosition.y;
             data[3] = direction;
-            data[4] = attack;
+            data[4] = fire;
+            data[5] = jumpDown;
+            data[6] = jumpUp;
+
         }
 
         var receiveOffset = data.Length / 2;
@@ -65,7 +81,7 @@ public class RealtimeController : MonoBehaviour
             enemy.FixPosition(data[receiveOffset + 1], data[receiveOffset + 2]);
         }
 
-        player.Control(direction, attack);
-        enemy.Control(data[receiveOffset + 3], data[receiveOffset + 4]);
+        player.Move(direction, fire > 0, jumpDown > 0, jumpUp > 0);
+        enemy.Move(data[receiveOffset + 3], data[receiveOffset + 4] > 0, data[receiveOffset + 5] > 0, data[receiveOffset + 6] > 0);
     }
 }

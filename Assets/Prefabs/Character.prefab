@@ -78,7 +78,7 @@ BoxCollider2D:
   m_Enabled: 1
   m_Density: 1
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
@@ -94,7 +94,7 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
---- !u!114 &-1572317346104818320
+--- !u!114 &1676113384131877504
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -103,9 +103,34 @@ MonoBehaviour:
   m_GameObject: {fileID: 95305431849832881}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3a58db6d5a9c42ceb3759b8a327af99, type: 3}
+  m_Script: {fileID: 11500000, guid: 385f41a2764b946e18196f1e5ce60d64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _characterBounds:
+    m_Center: {x: 0, y: 0.15, z: 0}
+    m_Extent: {x: 0.5, y: 0.5, z: 0}
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  _detectorCount: 3
+  _detectionRayLength: 0.2
+  _rayBuffer: 0.1
+  _acceleration: 90
+  _moveClamp: 13
+  _deAcceleration: 60
+  _apexBonus: 2
+  _fallClamp: -40
+  _minFallSpeed: 80
+  _maxFallSpeed: 120
+  _jumpHeight: 30
+  _jumpApexThreshold: 10
+  _coyoteTimeThreshold: 0.1
+  _jumpBuffer: 0.1
+  _jumpEndEarlyGravityModifier: 3
+  _freeColliderIterations: 10
   speed: 5
   attackDelay: 0.5
   swordLength: 1
+  attackable:
+    serializedVersion: 2
+    m_Bits: 64
