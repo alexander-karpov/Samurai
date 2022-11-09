@@ -2,5 +2,6 @@
 
 !/.gitignore
 !/Assets/
+!/TODO.md
 
 /Assets/**/.DS_Store

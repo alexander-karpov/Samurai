@@ -422,7 +422,7 @@ public class MoveController : MonoBehaviour
         transform.position = Vector3.Lerp(
             transform.position,
             new Vector3(x, y, 0),
-            5f * Time.deltaTime
+            3f * Time.deltaTime
         );
 
         transform.position = new Vector3(x, y, 0);

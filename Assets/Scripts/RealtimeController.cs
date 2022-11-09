@@ -81,7 +81,8 @@ public class RealtimeController : MonoBehaviour
             enemy.FixPosition(data[receiveOffset + 1], data[receiveOffset + 2]);
         }
 
-        player.Move(direction, fire > 0, jumpDown > 0, jumpUp > 0);
         enemy.Move(data[receiveOffset + 3], data[receiveOffset + 4] > 0, data[receiveOffset + 5] > 0, data[receiveOffset + 6] > 0);
+        // Сначала обновляем противника, потом игрока т.к. данные противника с задержкой (а поможет ли это?)
+        player.Move(direction, fire > 0, jumpDown > 0, jumpUp > 0);
     }
 }
