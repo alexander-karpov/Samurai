@@ -6,12 +6,18 @@ using System;
 
 public class Textroom : MonoBehaviour
 {
-    int[] data = new int[14];
+    public int updatesRate = 30;
+
+    int[] data;
+    float lastUpdateTime = 0;
+    Vector2 lastPlayerPosition;
+    Vector2 lastPlayerInput;
+
     TransmitFrameView playerDataView;
     TransmitFrameView enemyDataView;
 
-    volatile Player player;
-    volatile Enemy enemy;
+    Player player;
+    Enemy enemy;
 
     [DllImport("__Internal")]
     private static extern void JoinRoom(int roomId);
@@ -21,6 +27,8 @@ public class Textroom : MonoBehaviour
 
     void Start()
     {
+        data = new int[TransmitFrameView.NumberOfFields * 2];
+
         player = GameObject.FindWithTag("Player").GetComponent<Player>();
         enemy = GameObject.FindWithTag("Enemy").GetComponent<Enemy>();
 
@@ -41,29 +49,16 @@ public class Textroom : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-        if (Input.GetButtonDown("Jump"))
+        if (Time.realtimeSinceStartup < lastUpdateTime + 1f / updatesRate)
         {
-            enemyDataView.Enabled = true;
-            enemyDataView.Position = new Vector2(2, 3);
-            enemyDataView.Input = new Vector2(4, 5);
-
-            UpdatePlayerState();
-            Debug.Log($"C# player before {playerDataView.Enabled} {playerDataView.Position.x} {playerDataView.Position.y}");
-            Debug.Log($"C# enemy before {enemyDataView.Enabled} {enemyDataView.Position.x} {enemyDataView.Position.y}");
-
-            TransmitState(data, TransmitFrameView.NumberOfFields);
-
-            Debug.Log($"C# player after {playerDataView.Enabled} {playerDataView.Position.x} {playerDataView.Position.y}");
-            Debug.Log($"C# enemy after {enemyDataView.Enabled} {enemyDataView.Position.x} {enemyDataView.Position.y}");
-
-
-            for (int i = 0; i < data.Length; i++)
-            {
-                Debug.Log(data[i]);
-            }
-
-            UpdateEnemyFromState();
+            return;
         }
+
+        UpdatePlayerState();
+        TransmitState(data, TransmitFrameView.NumberOfFields);
+        UpdateEnemyFromState();
+
+        lastUpdateTime = Time.realtimeSinceStartup;
     }
 
     void UpdatePlayerState()
@@ -73,25 +68,27 @@ public class Textroom : MonoBehaviour
         var input = new Vector2(h, v);
         var position = (Vector2)player.transform.position;
 
-        if (position != playerDataView.Position || input != playerDataView.Input)
+        if (position != lastPlayerPosition || input != lastPlayerInput)
         {
-            playerDataView.Enabled = true;
+            playerDataView.Updated = true;
             playerDataView.Position = position;
             playerDataView.Input = input;
+
+            lastPlayerPosition = position;
+            lastPlayerInput = input;
         }
         else
         {
-            playerDataView.Enabled = false;
+            playerDataView.Updated = false;
         }
     }
 
     void UpdateEnemyFromState()
     {
-        enemy.enabled = enemyDataView.Enabled;
-
-        if (enemy.enabled)
+        if (enemyDataView.Updated)
         {
             enemy.Sync(enemyDataView.Position, enemyDataView.Input);
+            Debug.Log("Sync");
         }
     }
 }
