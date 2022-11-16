@@ -6,7 +6,7 @@ public class TransmitFrameView
     public const int NumberOfFields = 5;
 
     const int accuracy = 100;
-    const int updated = 0;
+    const int version = 0;
     const int x = 1;
     const int y = 2;
     const int inputX = 3;
@@ -21,10 +21,10 @@ public class TransmitFrameView
         this.offset = offset;
     }
 
-    public bool Updated
+    public int Version
     {
-        get => Convert.ToBoolean(data[updated + offset]);
-        set => data[updated + offset] = Convert.ToInt32(value);
+        get => data[version + offset];
+        set => data[version + offset] = value;
     }
 
     public Vector2 Position

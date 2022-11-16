@@ -1,6 +1,7 @@
 (function () {
     let isInRoom = false;
     let received;
+    let lastSentVersion = 0;
 
     const textroom = new window.Textroom({
         onJoin: (user) => {
@@ -42,19 +43,15 @@
         /**
          * Send
          */
-        if (player[0]) {
-            textroom.message(player.toString());
+        if (player[0] > lastSentVersion) {
+            lastSentVersion = player[0];
 
-            console.log('sent ', player.toString())
+            textroom.message(player.toString());
         }
 
         if (received) {
             enemy.set(received.split(','));
             received = undefined;
-
-            console.log('received ', enemy.toString())
-        } else {
-            enemy[0] = 0;
         }
     };
 })();

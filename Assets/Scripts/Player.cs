@@ -5,18 +5,23 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
     Character chr;
+    Rigidbody2D rb;
 
     void Start()
     {
         chr = GetComponent<Character>();
+        rb = GetComponent<Rigidbody2D>();
     }
 
     void FixedUpdate()
     {
-        var horizontal = Input.GetAxisRaw("Horizontal");
-        var vertical = Input.GetAxisRaw("Vertical");
-        var input = new Vector2(horizontal, vertical);
+        var h = Input.GetAxisRaw("Horizontal");
+        var v = Input.GetAxisRaw("Vertical");
+        var input = new Vector2(h, v);
 
-        chr.Move(input);
+        if (input != Vector2.zero)
+        {
+            rb.MovePosition(rb.position + input.normalized * (chr.speed * Time.fixedDeltaTime));
+        }
     }
 }

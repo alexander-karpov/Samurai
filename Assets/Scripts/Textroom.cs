@@ -8,10 +8,10 @@ public class Textroom : MonoBehaviour
 {
     public int updatesRate = 30;
 
-    int[] data;
-    float lastUpdateTime = 0;
-    Vector2 lastPlayerPosition;
+    int[] transmissionBuffer;
     Vector2 lastPlayerInput;
+    int lastSentVersion = 0;
+    int lastReceivedVersion = 0;
 
     TransmitFrameView playerDataView;
     TransmitFrameView enemyDataView;
@@ -27,13 +27,12 @@ public class Textroom : MonoBehaviour
 
     void Start()
     {
-        data = new int[TransmitFrameView.NumberOfFields * 2];
+        transmissionBuffer = new int[TransmitFrameView.NumberOfFields * 2];
+        playerDataView = new TransmitFrameView(transmissionBuffer, 0);
+        enemyDataView = new TransmitFrameView(transmissionBuffer, TransmitFrameView.NumberOfFields);
 
         player = GameObject.FindWithTag("Player").GetComponent<Player>();
         enemy = GameObject.FindWithTag("Enemy").GetComponent<Enemy>();
-
-        playerDataView = new TransmitFrameView(data, 0);
-        enemyDataView = new TransmitFrameView(data, TransmitFrameView.NumberOfFields);
 
         try
         {
@@ -49,46 +48,35 @@ public class Textroom : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-        if (Time.realtimeSinceStartup < lastUpdateTime + 1f / updatesRate)
-        {
-            return;
-        }
-
-        UpdatePlayerState();
-        TransmitState(data, TransmitFrameView.NumberOfFields);
-        UpdateEnemyFromState();
-
-        lastUpdateTime = Time.realtimeSinceStartup;
+        WritePlayerStateToBuffer();
+        TransmitState(transmissionBuffer, TransmitFrameView.NumberOfFields);
+        ReadEnemyStateFromBuffer();
     }
 
-    void UpdatePlayerState()
+    void WritePlayerStateToBuffer()
     {
         var h = Input.GetAxisRaw("Horizontal");
         var v = Input.GetAxisRaw("Vertical");
         var input = new Vector2(h, v);
-        var position = (Vector2)player.transform.position;
 
-        if (position != lastPlayerPosition || input != lastPlayerInput)
+        if (input != lastPlayerInput)
         {
-            playerDataView.Updated = true;
-            playerDataView.Position = position;
-            playerDataView.Input = input;
-
-            lastPlayerPosition = position;
             lastPlayerInput = input;
-        }
-        else
-        {
-            playerDataView.Updated = false;
+            lastSentVersion += 1;
+
+            playerDataView.Version = lastSentVersion;
+            playerDataView.Position = player.transform.position;
+            playerDataView.Input = input;
         }
     }
 
-    void UpdateEnemyFromState()
+    void ReadEnemyStateFromBuffer()
     {
-        if (enemyDataView.Updated)
+        if (enemyDataView.Version > lastReceivedVersion)
         {
+            lastReceivedVersion = enemyDataView.Version;
+
             enemy.Sync(enemyDataView.Position, enemyDataView.Input);
-            Debug.Log("Sync");
         }
     }
 }
