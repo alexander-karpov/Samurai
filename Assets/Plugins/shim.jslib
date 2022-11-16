@@ -1,8 +1,11 @@
 mergeInto(LibraryManager.library, {
+    Init: function () {
+        window.textrooom = new window.TextroomClient(HEAP32, SendMessage);
+    },
     JoinRoom: function (roomId) {
-        window.JoinRoom(roomId);
+        window.textrooom.JoinRoom(roomId);
     },
     TransmitState: function (offset, numberOfFields) {
-        window.TransmitState(HEAP32, offset, numberOfFields);
+        window.textrooom.TransmitState(offset, numberOfFields);
     },
 });

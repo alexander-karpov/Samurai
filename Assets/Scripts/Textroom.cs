@@ -20,6 +20,9 @@ public class Textroom : MonoBehaviour
     Enemy enemy;
 
     [DllImport("__Internal")]
+    private static extern void Init();
+
+    [DllImport("__Internal")]
     private static extern void JoinRoom(int roomId);
 
     [DllImport("__Internal")]
@@ -36,6 +39,7 @@ public class Textroom : MonoBehaviour
 
         try
         {
+            Init();
             JoinRoom(1001);
         }
         catch
@@ -51,6 +55,11 @@ public class Textroom : MonoBehaviour
         WritePlayerStateToBuffer();
         TransmitState(transmissionBuffer, TransmitFrameView.NumberOfFields);
         ReadEnemyStateFromBuffer();
+    }
+
+    void OnEvent(string payload)
+    {
+        Debug.Log($"OnEvent payload {payload}");
     }
 
     void WritePlayerStateToBuffer()
