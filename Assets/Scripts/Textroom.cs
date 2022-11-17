@@ -16,8 +16,8 @@ public class Textroom : MonoBehaviour
     TransmitFrameView playerDataView;
     TransmitFrameView enemyDataView;
 
-    Player player;
-    Enemy enemy;
+    GameObject player;
+    OpponentController enemy;
 
     [DllImport("__Internal")]
     private static extern void Init();
@@ -34,8 +34,8 @@ public class Textroom : MonoBehaviour
         playerDataView = new TransmitFrameView(transmissionBuffer, 0);
         enemyDataView = new TransmitFrameView(transmissionBuffer, TransmitFrameView.NumberOfFields);
 
-        player = GameObject.FindWithTag("Player").GetComponent<Player>();
-        enemy = GameObject.FindWithTag("Enemy").GetComponent<Enemy>();
+        player = GameObject.FindWithTag("Player");
+        enemy = GameObject.FindWithTag("Enemy").GetComponent<OpponentController>();
 
         try
         {
@@ -65,7 +65,7 @@ public class Textroom : MonoBehaviour
     void WritePlayerStateToBuffer()
     {
         var h = Input.GetAxisRaw("Horizontal");
-        var v = Input.GetAxisRaw("Vertical");
+        var v = Input.GetAxisRaw("Jump");
         var input = new Vector2(h, v);
 
         if (input != lastPlayerInput)

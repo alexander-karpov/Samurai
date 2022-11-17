@@ -3,11 +3,48 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+
+
+/// <summary>
+/// Hey!
+/// Tarodev here. I built this controller as there was a severe lack of quality & free 2D controllers out there.
+/// Right now it only contains movement and jumping, but it should be pretty easy to expand... I may even do it myself
+/// if there's enough interest. You can play and compete for best times here: https://tarodev.itch.io/
+/// If you hve any questions or would like to brag about your score, come to discord: https://discord.gg/GqeHHnhHpz
+/// </summary>
 public class MoveController : MonoBehaviour
 {
+    public struct FrameInput
+    {
+        public float X;
+        public bool JumpDown;
+        public bool JumpUp;
+    }
+
+    public interface IPlayerController
+    {
+        public Vector3 Velocity { get; }
+        public FrameInput Input { get; }
+        public bool JumpingThisFrame { get; }
+        public bool LandingThisFrame { get; }
+        public Vector3 RawMovement { get; }
+        public bool Grounded { get; }
+    }
+
+    public struct RayRange
+    {
+        public RayRange(float x1, float y1, float x2, float y2, Vector2 dir)
+        {
+            Start = new Vector2(x1, y1);
+            End = new Vector2(x2, y2);
+            Dir = dir;
+        }
+
+        public readonly Vector2 Start, End, Dir;
+    }
     // Public for external hooks
     public Vector3 Velocity { get; private set; }
-    public FrameInput Input { get; private set; }
+    public FrameInput Input { get; protected set; }
     public bool JumpingThisFrame { get; private set; }
     public bool LandingThisFrame { get; private set; }
     public Vector3 RawMovement { get; private set; }
@@ -21,17 +58,14 @@ public class MoveController : MonoBehaviour
     void Awake() => Invoke(nameof(Activate), 0.5f);
     void Activate() => _active = true;
 
-    public void Move(float horizontal, bool attack, bool jumpDown, bool jumpUp)
+    private void Update()
     {
         if (!_active) return;
-        if (!alive) return;
-
-
         // Calculate velocity
         Velocity = (transform.position - _lastPosition) / Time.deltaTime;
         _lastPosition = transform.position;
 
-        GatherInput(horizontal, jumpDown, jumpUp);
+        GatherInput();
         RunCollisionChecks();
 
         CalculateWalk(); // Horizontal movement
@@ -40,28 +74,18 @@ public class MoveController : MonoBehaviour
         CalculateJump(); // Possibly overrides vertical
 
         MoveCharacter(); // Actually perform the axis movement
-
-        if (attack)
-        {
-            AttemptAttack();
-        }
-
-        if (horizontal != 0)
-        {
-            transform.localScale = horizontal > 0 ? Vector3.one : new Vector3(-1, 1, 1);
-        }
     }
 
 
     #region Gather Input
 
-    private void GatherInput(float horizontal, bool jumpDown, bool jumpUp)
+    protected virtual void GatherInput()
     {
         Input = new FrameInput
         {
-            JumpDown = jumpDown,
-            JumpUp = jumpUp,
-            X = horizontal
+            JumpDown = UnityEngine.Input.GetButtonDown("Jump"),
+            JumpUp = UnityEngine.Input.GetButtonUp("Jump"),
+            X = UnityEngine.Input.GetAxisRaw("Horizontal")
         };
         if (Input.JumpDown)
         {
@@ -240,7 +264,7 @@ public class MoveController : MonoBehaviour
     private bool _coyoteUsable;
     private bool _endedJumpEarly = true;
     private float _apexPoint; // Becomes 1 at the apex of a jump
-    private float _lastJumpPressed;
+    protected float _lastJumpPressed;
     private bool CanUseCoyote => _coyoteUsable && !_colDown && _timeLeftGrounded + _coyoteTimeThreshold > Time.time;
     private bool HasBufferedJump => _colDown && _lastJumpPressed + _jumpBuffer > Time.time;
 
@@ -339,155 +363,4 @@ public class MoveController : MonoBehaviour
     }
 
     #endregion
-
-    public struct FrameInput
-    {
-        public float X;
-        public bool JumpDown;
-        public bool JumpUp;
-    }
-
-    public interface IPlayerController
-    {
-        public Vector3 Velocity { get; }
-        public FrameInput Input { get; }
-        public bool JumpingThisFrame { get; }
-        public bool LandingThisFrame { get; }
-        public Vector3 RawMovement { get; }
-        public bool Grounded { get; }
-    }
-
-    public struct RayRange
-    {
-        public RayRange(float x1, float y1, float x2, float y2, Vector2 dir)
-        {
-            Start = new Vector2(x1, y1);
-            End = new Vector2(x2, y2);
-            Dir = dir;
-        }
-
-        public readonly Vector2 Start, End, Dir;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-    public float speed = 5f;
-    public float attackDelay = 0.5f;
-    public float swordLength = 1f;
-
-    Animator animator;
-    float lastAttackTime = 0;
-    RaycastHit2D[] attackHits = new RaycastHit2D[3];
-    [SerializeField] private LayerMask attackable;
-    bool alive = true;
-    Vector2 spawnPosition;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        animator = GetComponent<Animator>();
-        spawnPosition = transform.position;
-    }
-
-    // public void Control(float direction, float attack)
-    // {
-    //     if (!alive)
-    //     {
-    //         return;
-    //     }
-
-    //     if (direction != 0)
-    //     {
-    //         Move(direction);
-    //     }
-
-    //     if (attack != 0)
-    //     {
-    //         AttemptAttack();
-    //     }
-    // }
-
-    public void FixPosition(float x, float y)
-    {
-        transform.position = Vector3.Lerp(
-            transform.position,
-            new Vector3(x, y, 0),
-            3f * Time.deltaTime
-        );
-
-        transform.position = new Vector3(x, y, 0);
-    }
-
-    public void Hit()
-    {
-        if (!alive)
-        {
-            return;
-        }
-
-        animator.SetTrigger("hit");
-        alive = false;
-        StartCoroutine(Respawn());
-    }
-
-    // void Move(float direction)
-    // {
-    //     var p = transform.position;
-    //     var movement = speed * direction * Time.deltaTime;
-
-    //     transform.Translate(movement, 0, 0);
-    //     transform.localScale = movement > 0 ? Vector3.one : new Vector3(-1, 1, 1);
-    // }
-
-    void AttemptAttack()
-    {
-        if (Time.realtimeSinceStartup < lastAttackTime + attackDelay)
-        {
-            return;
-        }
-
-        animator.SetTrigger("attack");
-        lastAttackTime = Time.realtimeSinceStartup;
-
-        var count = Physics2D.RaycastNonAlloc(
-            transform.position,
-            new Vector2(transform.localScale.x, 0),
-            attackHits,
-            swordLength,
-            attackable.value
-        );
-
-        if (count == 0)
-        {
-            return;
-        }
-
-        for (int i = 0; i < count; i++)
-        {
-            var chr = attackHits[i].collider.GetComponent<MoveController>();
-
-            if (chr != null && chr != this)
-            {
-                chr.Hit();
-            }
-        }
-    }
-
-    IEnumerator Respawn()
-    {
-        yield return new WaitForSeconds(1);
-        animator.SetTrigger("idle");
-        alive = true;
-        transform.position = spawnPosition;
-    }
 }

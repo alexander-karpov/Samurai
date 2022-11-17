@@ -28,6 +28,16 @@ class TextroomClient {
         this.SendMessage('Textroom', 'OnEvent', eventName);
     }
 
+    RoomsList() {
+        return this.connectedThen.then(() => {
+            return this.textroom.roomsList();
+        }).then((rooms) => {
+            const onePlayerRooms = rooms.filter((r) => r.num_participants === 1);
+            const zeroPlayersRooms = rooms.filter((r) => r.num_participants === 0);
+            const rooms_ = onePlayerRooms.length ? onePlayerRooms : zeroPlayersRooms;
+        })
+    }
+
     JoinRoom() {
         this.connectedThen.then(() => {
             return this.textroom.roomsList();
