@@ -1,4 +1,4 @@
-class TextroomClient {
+window.TextroomClient = class TextroomClient {
     constructor(HEAP32, SendMessage) {
         this.HEAP32 = HEAP32;
         this.SendMessage = SendMessage;

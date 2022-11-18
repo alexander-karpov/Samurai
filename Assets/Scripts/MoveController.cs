@@ -19,6 +19,7 @@ public class MoveController : MonoBehaviour
         public float X;
         public bool JumpDown;
         public bool JumpUp;
+        public bool Attack;
     }
 
     public interface IPlayerController
@@ -66,6 +67,15 @@ public class MoveController : MonoBehaviour
         _lastPosition = transform.position;
 
         GatherInput();
+
+        if (Input.Attack)
+        {
+            if (GetComponent<AttackBehaviour>().AttemptAttack(Vector2.right))
+            {
+                Debug.Log("Hit");
+            }
+        }
+
         RunCollisionChecks();
 
         CalculateWalk(); // Horizontal movement
@@ -85,12 +95,14 @@ public class MoveController : MonoBehaviour
         {
             JumpDown = UnityEngine.Input.GetButtonDown("Jump"),
             JumpUp = UnityEngine.Input.GetButtonUp("Jump"),
-            X = UnityEngine.Input.GetAxisRaw("Horizontal")
+            X = UnityEngine.Input.GetAxisRaw("Horizontal"),
+            Attack = UnityEngine.Input.GetKey(KeyCode.Return),
         };
         if (Input.JumpDown)
         {
             _lastJumpPressed = Time.time;
         }
+
     }
 
     #endregion
