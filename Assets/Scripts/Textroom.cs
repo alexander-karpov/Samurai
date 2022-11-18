@@ -6,41 +6,18 @@ using System;
 
 public class Textroom : MonoBehaviour
 {
-    public int updatesRate = 30;
+    readonly int[] transmissionBuffer = new int[16];
 
-    int[] transmissionBuffer;
-    Vector2 lastPlayerInput;
-    int lastSentVersion = 0;
-    int lastReceivedVersion = 0;
-
-    TransmitFrameView playerDataView;
-    TransmitFrameView enemyDataView;
-
-    GameObject player;
-    OpponentController enemy;
-
-    [DllImport("__Internal")]
-    private static extern void Init();
-
-    [DllImport("__Internal")]
-    private static extern void JoinRoom(int roomId);
-
-    [DllImport("__Internal")]
-    private static extern void TransmitState(int[] data, int numberOfFields);
+    //
+    // Livecycle
+    //
 
     void Start()
     {
-        transmissionBuffer = new int[TransmitFrameView.NumberOfFields * 2];
-        playerDataView = new TransmitFrameView(transmissionBuffer, 0);
-        enemyDataView = new TransmitFrameView(transmissionBuffer, TransmitFrameView.NumberOfFields);
-
-        player = GameObject.FindWithTag("Player");
-        enemy = GameObject.FindWithTag("Enemy").GetComponent<OpponentController>();
-
         try
         {
             Init();
-            JoinRoom(1001);
+            Join();
         }
         catch
         {
@@ -49,43 +26,177 @@ public class Textroom : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
     void FixedUpdate()
     {
-        WritePlayerStateToBuffer();
-        TransmitState(transmissionBuffer, TransmitFrameView.NumberOfFields);
-        ReadEnemyStateFromBuffer();
+        ReceiveAll();
     }
 
-    void OnEvent(string payload)
-    {
-        Debug.Log($"OnEvent payload {payload}");
-    }
+    //
+    // Events
+    //
 
-    void WritePlayerStateToBuffer()
-    {
-        var h = Input.GetAxisRaw("Horizontal");
-        var v = Input.GetAxisRaw("Jump");
-        var input = new Vector2(h, v);
+    public event EventHandler<string> OnEvent;
+    public event EventHandler<(int version, Vector2 input, Vector2 position)> OnInput;
 
-        if (input != lastPlayerInput)
+    //
+    // Api
+    //
+
+
+    public void SendInput(int version, Vector2 input, Vector2 position)
+    {
+        if (!enabled)
         {
-            lastPlayerInput = input;
-            lastSentVersion += 1;
+            return;
+        }
 
-            playerDataView.Version = lastSentVersion;
-            playerDataView.Position = player.transform.position;
-            playerDataView.Input = input;
+        var encoder = new TextroomMessageEncoder(transmissionBuffer);
+
+        encoder.Write(TextroomMessageType.Input);
+        encoder.Write(version);
+        encoder.Write(input);
+        encoder.Write(position);
+
+        Send(transmissionBuffer, encoder.Size);
+
+#if DEVELOPMENT_BUILD
+        Debug.Log($"Send Input {string.Join(", ", transmissionBuffer)}");
+#endif
+    }
+
+    void ReceiveAll()
+    {
+        while (true)
+        {
+            /*     
+            Вернувшееся значение отвечает на два вопроса:
+                1. Было бы вообще что-то считано (если не 0)
+                2. Нужно ли ещё что-то считывать (если 2 или больше)
+            */
+            var countBeforeRead = Receive(transmissionBuffer, transmissionBuffer.Length);
+            var decoder = new TextroomMessageDecoder(transmissionBuffer);
+
+            if (countBeforeRead != 0)
+            {
+#if DEVELOPMENT_BUILD
+                Debug.Log($"Receive message {string.Join(", ", transmissionBuffer)}");
+#endif
+                switch (decoder.ReadType())
+                {
+                    case TextroomMessageType.Input:
+                        OnInput?.Invoke(this, (decoder.ReadInt(), decoder.ReadVector2(), decoder.ReadVector2()));
+                        break;
+                }
+            }
+
+            if (countBeforeRead < 2)
+            {
+                return;
+            }
         }
     }
 
-    void ReadEnemyStateFromBuffer()
-    {
-        if (enemyDataView.Version > lastReceivedVersion)
-        {
-            lastReceivedVersion = enemyDataView.Version;
+    //
+    // JavaScript interop
+    //
 
-            enemy.Sync(enemyDataView.Position, enemyDataView.Input);
-        }
+    [DllImport("__Internal")]
+    private static extern void Init();
+
+    [DllImport("__Internal")]
+    private static extern void Join();
+
+    [DllImport("__Internal")]
+    private static extern void Send(int[] data, int size);
+
+    /// <returns>Количество сообщений ДО считывания</returns>
+    [DllImport("__Internal")]
+    private static extern int Receive(int[] data, int size);
+
+    private void RaiseEvent(string payload)
+    {
+#if DEVELOPMENT_BUILD
+        Debug.Log($"Event {payload}");
+#endif
+
+        OnEvent?.Invoke(this, payload);
+    }
+}
+
+
+enum TextroomMessageType : int
+{
+    Input = 1
+}
+
+struct TextroomMessageEncoder
+{
+    public const int FloatToIntAccuracy = 100;
+
+    readonly int[] _buffer;
+    int _offset;
+
+    public TextroomMessageEncoder(int[] buffer, int offset = 0)
+    {
+        _buffer = buffer;
+        _offset = offset;
+    }
+
+    public int Size => _offset;
+
+    public void Write(TextroomMessageType type)
+    {
+        Write((int)type);
+    }
+
+    public void Write(Vector2 value)
+    {
+        Write(value.x);
+        Write(value.y);
+    }
+
+    public void Write(int value)
+    {
+        _buffer[_offset++] = value;
+    }
+
+    public void Write(float value)
+    {
+        _buffer[_offset++] = (int)(value * FloatToIntAccuracy);
+
+    }
+}
+
+struct TextroomMessageDecoder
+{
+    public const int FloatToIntAccuracy = TextroomMessageEncoder.FloatToIntAccuracy;
+
+    readonly int[] _buffer;
+    int _offset;
+
+    public TextroomMessageDecoder(int[] buffer, int offset = 0)
+    {
+        _buffer = buffer;
+        _offset = offset;
+    }
+
+    public TextroomMessageType ReadType()
+    {
+        return (TextroomMessageType)ReadInt();
+    }
+
+    public Vector2 ReadVector2()
+    {
+        return new(ReadFloat(), ReadFloat());
+    }
+
+    public int ReadInt()
+    {
+        return _buffer[_offset++];
+    }
+
+    public float ReadFloat()
+    {
+        return (float)_buffer[_offset++] / FloatToIntAccuracy;
     }
 }

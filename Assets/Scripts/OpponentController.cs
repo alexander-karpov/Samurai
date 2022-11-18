@@ -5,12 +5,24 @@ using UnityEngine;
 public class OpponentController : MoveController
 {
     Vector2 opponentInput;
+    int lastReceivedInputVersion = 0;
 
-    public void Sync(Vector2 position, Vector2 input)
+    [SerializeField]
+    Textroom textroom;
+
+    void Start()
     {
-        opponentInput = input;
-        transform.position = position;
-        // predictedPosition = position;
+        textroom.OnInput += HandleInput;
+    }
+
+    void HandleInput(object sender, (int version, Vector2 input, Vector2 position) e)
+    {
+        if (e.version > lastReceivedInputVersion)
+        {
+            lastReceivedInputVersion = e.version;
+            opponentInput = e.input;
+            transform.position = e.position;
+        }
     }
 
     float lastY = 0;

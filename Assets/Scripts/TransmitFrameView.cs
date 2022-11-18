@@ -1,9 +1,9 @@
 using UnityEngine;
 using System;
 
-public class TransmitFrameView
+public struct TransmitFrameView
 {
-    public const int NumberOfFields = 5;
+    public const int Size = 5;
 
     const int accuracy = 100;
     const int version = 0;
@@ -15,7 +15,7 @@ public class TransmitFrameView
     readonly int[] data;
     readonly int offset;
 
-    public TransmitFrameView(int[] data, int offset)
+    public TransmitFrameView(int[] data, int offset = 0)
     {
         this.data = data;
         this.offset = offset;
@@ -46,14 +46,4 @@ public class TransmitFrameView
             data[inputY + offset] = (int)(value.y * accuracy);
         }
     }
-
-    // public static bool operator ==(TransmitFrameView a, TransmitFrameView b)
-    // {
-    //     return a.Position == b.Position && a.Input == b.Input;
-    // }
-
-    // public static bool operator !=(TransmitFrameView a, TransmitFrameView b)
-    // {
-    //     return !(a == b);
-    // }
 }

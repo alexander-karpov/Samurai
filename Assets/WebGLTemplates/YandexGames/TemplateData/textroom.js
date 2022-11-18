@@ -2,8 +2,7 @@ window.TextroomClient = class TextroomClient {
     constructor(HEAP32, SendMessage) {
         this.HEAP32 = HEAP32;
         this.SendMessage = SendMessage;
-        this.receivedText = undefined;
-        this.lastSentVersion = 0;
+        this.receivedText = [];
         this.opponentUsername = undefined;
 
         this.textroom = new window.Textroom({
@@ -14,7 +13,7 @@ window.TextroomClient = class TextroomClient {
                 this.OnOpponentLeave(user.username);
             },
             onMessage: (text) => {
-                this.receivedText = text;
+                this.receivedText.push(text);
             },
         });
 
@@ -25,7 +24,7 @@ window.TextroomClient = class TextroomClient {
     }
 
     Emit(eventName) {
-        this.SendMessage('Textroom', 'OnEvent', eventName);
+        this.SendMessage('Textroom', 'RaiseEvent', eventName);
     }
 
     RoomsList() {
@@ -108,31 +107,25 @@ window.TextroomClient = class TextroomClient {
         }
     }
 
-    TransmitState(offset, numberOfFields) {
-        const player = new Int32Array(this.HEAP32.buffer, offset, numberOfFields);
-        const enemy = new Int32Array(this.HEAP32.buffer, offset + (numberOfFields << 2), numberOfFields);
+    Send(offset, size) {
+        const view = new Int32Array(this.HEAP32.buffer, offset, size);
 
-        /**
-         * Send
-         */
-        if (player[0] > this.lastSentVersion) {
-            this.lastSentVersion = player[0];
-            const message = player.toString();
+        this.textroom.message(view.toString());
+    }
 
-            this.textroom.message(message);
+    /**
+     * @returns Количество сообщений до считывания
+     */
+    Receive(offset, size) {
+        const countBeforeRead = this.receivedText.length;
 
-            console.log('Send input', message);
+        if (countBeforeRead) {
+            const view = new Int32Array(this.HEAP32.buffer, offset, size);
+            view.set(this.receivedText[0].split(','));
+
+            this.receivedText.shift();
         }
 
-        /**
-         * Receive
-         */
-        if (this.receivedText) {
-            enemy.set(this.receivedText.split(','));
-
-            console.log('Receive input', this.receivedText);
-
-            this.receivedText = undefined;
-        }
-    };
+        return countBeforeRead;
+    }
 };
